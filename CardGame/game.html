@@ -1,0 +1,19 @@
+<html>
+<head>
+<title></title>
+<script src="game.js"></script>
+</head>
+<body>
+
+<div id="game_wrap"></div>
+
+<script type="text/javascript">
+// 基础示例
+var game = new JinHua('game_wrap');
+
+for (var i = 0; i < 10; i++) {
+	game.addUser(new Account('小马' + i));
+}
+</script>
+</body>
+</html>
