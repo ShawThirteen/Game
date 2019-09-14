@@ -5,16 +5,17 @@ class UI {
 	}
 
 	factory (obj) {
+		var _this = this;
 		var eventList = {
 			$ (id) {
 				var node = document.getElementById(id);
-				this.factory(node);
+				_this.factory(node);
 				return node;
 			},
 			find (tagName) {
 				var list = obj.getElementsByTagName(tagName);
 				for (var i = 0, len = list.length; i < len; i++) {
-					this.factory(list[i]);
+					_this.factory(list[i]);
 				}
 				return list;
 			},
@@ -40,32 +41,34 @@ class UI {
 	}
 	_bodyModel (chips, count) {
 		var result = [
-			'<dv id="bodyWrap">',
-				'<label>当前底注： <span id="currentChips">'+ chips +'</span></label>',
-				'<label>总金额： <span id="count">'+ count +'</span></label>',
-			'</div>'
+			'<div id="bodyWrap">',
+				'<label>当前底注:<span id="currentChips">'+ chips +'</span></label>',
+				'<label>总金额:<span id="count">'+ count +'</span></label>',
+			'</div>',
+			'<div id="countDown_wrap">倒计时:<span id="countDown">60</span></div>'
 		];
 		return result.join('');
 	}
 
 	render(type, ...args) {
 		type = type.toLowerCase();
-
+		var _this = this;
 		var fnMap = {
-			header: this._renderHeader,
-			body: this._renderBody,
+			header: _this._renderHeader,
+			body: _this._renderBody,
+			footer: _this._renderFooter
 		}
 
-		fnMap[type](...args);
+		fnMap[type].bind(_this)(...args);
 	}
 
 	_renderHeader (chips, commission) {
-		this.container.append(this._headerModel(chips. commission));
+		this.container.append(this._headerModel(chips, commission));
 		this.headerElment = this.container.$('headerWrap');
 	}
 
 	_renderBody (chips, count) {
-		this.container.append(this._bodyModel());
+		this.container.append(this._bodyModel(chips, count));
 		this.bodyElement = this.container.$('bodyWrap');
 	}
 
@@ -88,14 +91,14 @@ class UI {
 
 		this.each($liList, (item, index) => {
 			var curUser = userList[index];
-			_this._bindLi(curUser, item);
+			this._bindLi(curUser, item);
 		})
 	}
 
 	_bindLi (curUser, liNode) {
 		var $btnWrap = liNode.find('div')[0];
 
-		$btnWrap.on('addEventListener', (event) => {
+		$btnWrap.addEventListener('click', (event) => {
 			var $target = event.target;
 			var curType = $target.getAttribute('action');
 			switch (curType) {
@@ -116,7 +119,7 @@ class UI {
 
 	each (arr, callback) {
 		for (var i = 0, len = arr.length; i < len; i++) {
-			callback(arr, index);
+			callback(arr[i], i);
 		}
 	}
 
@@ -124,10 +127,11 @@ class UI {
 		type = type.toLowerCase();
 		var fnMap = {
 			body: this._upDateBod,
-			footer: this._upDateFooter
+			footer: this._upDateFooter,
+			time: this._upDateCountDown
 		}
 
-		fnMap[type](...args);
+		fnMap[type].bind(this)(...args);
 	}
 
 	_upDateBody (chips, count) {
@@ -138,6 +142,10 @@ class UI {
 	_upDateFooter (userOptions) {
 		var $li = this.footerElement.$(userOptions.id);
 		$li.$(userOptions.id + '_money').innerHTML = userOptions.money;
+	}
+
+	_upDateCountDown (time) {
+		this.bodyElement.$('countDown').innerHTML = time;
 	}
 
 	_footerModel (userList) {
@@ -168,8 +176,8 @@ class UI {
 					'<button action="open">开</button>',
 					'<button action="giveup">弃</button>',
 				'</div>',
-				'<div>'+ options.userName +'</div>',
-				'<div id="'+ options.id +'_money">'+ options.money +'</div>',
+				'<div class="userName">用户名:<span>'+ options.userName +'</span></div>',
+				'<div class="remain"> 余额:<span id="'+ options.id +'_money">'+ options.money +'</span></div>',
 			'</li>',
 		];
 		return result.join('');
@@ -213,15 +221,17 @@ class JinHua {
 		// 配置静态属性
 		this.config = {
 			commission: 0.05,	// 佣金
-			chips: 100,			// 底注筹码
-			doorNum: 100,		// 当前对局准入门槛
-			curChips: 100
+			chips: 5,			// 底注筹码
+			doorNum: 100		// 当前对局准入门槛
 		}
+		this.config.curChips = this.config.chips;
 
 		this.UI = new UIClass(wrapId);
 	}
 	_renderUI () {
-		this.UI.render
+		this.UI.render('header', this.config.chips, this.config.commission);	// 渲染头部
+		this.UI.render('body', this.config.curChips, this.pool);
+		this.UI.render('footer', this.user);
 	}
 
 	/*
@@ -287,24 +297,43 @@ class JinHua {
 				curUser.card && curUser.card.push(this.activeCard.pop()) || (curUser.card = [this.activeCard.pop()]);
 			})
 		}
+
+		this._loopUser(this.user, (curUser, i) => {
+			curUser.card.sort((pre, next) => {
+				return next.number - pre.number;
+			})
+			curUser.emit('see');
+		})
 	}
 
 	// 开局
 	start () {
 		// 检验用户
 		this._loopUser(this.user, (curUser, i) => {
-			var curUser = this.user[i];
-			if (curUser.balance.given > this.doorNum) {
-				curUser.balance.given -= this.doorNum;
-				this.pool += this.doorNum;
-			} else if (curUser.balance.given + curUser.balance.recharge < this.doorNum) {
+			if (curUser.money < this.doorNum) {
 				this.userExit(i--);
-				alert('出局');
+				alert(user.userName + '出局');
 			} else {
-				curUser.balance.recharge -= (this.doorNum - curUser.balance.given);
-				curUser.balance.given = 0;
-				this.pool += this.doorNum;
+				if (curUser.balance.given > this.config.curChips) {
+					curUser.balance.given -= this.config.curChips;
+				} else {
+					var remain = this.config.curChips - curUser.balance.given;
+					curUser.balance.given = 0;
+					curUser.balance.recharge -= remain;
+				}
+				this.pool += this.config.curChips;
 			}
+			curUser.money = curUser.balance.given + curUser.balance.recharge;	// 归总用户的资金
+
+			// 所有用户都有随时看自己牌的权力
+			curUser.on('see', () => {
+				var cardArr = [];
+				curUser.card.forEach((item, index) => {
+					cardArr.push(item.type + item.value);
+				})
+				console.log(cardArr);
+				curUser.isLay = true;
+			})
 
 			return i;
 		});
@@ -314,7 +343,8 @@ class JinHua {
 		this.fresh();	// 洗牌
 		this.deal(); 	// 发牌
 
-		delay(2, () => {	// 两秒后开始游戏，并进行读秒
+		this.delay(0.1, () => {	// 两秒后开始游戏，并进行读秒
+			this._renderUI();
 			this._loopGame();
 		})
 	}
@@ -329,13 +359,18 @@ class JinHua {
 
 	// 倒计时
 	countDown (callback) {
-		var time = 60;
+		var time = 6000;
 		clearInterval(this.countDownTimer);
+		this.UI.upDate('time', time);
 		this.countDownTimer = setInterval(() => {
 			if (--time <= -1) {
 				time = null;
 				clearInterval(this.countDownTimer);
+				this.UI.upDate('time', 60);
+
 				callback();
+			} else {
+				this.UI.upDate('time', time);
 			}
 		}, 1e3)
 	}
@@ -398,7 +433,8 @@ class JinHua {
 			return;
 		}
 
-		this.user.push(user);
+		// 最多允许14个人
+		this.user.length < 14 && this.user.push(user);
 	}
 
 	/*
@@ -425,10 +461,6 @@ class JinHua {
 	action () {
 		var activeUser = this.activeUser[this.activeIndex];
 		activeUser
-			.on('see', () => {
-				console.log(activeUser.card);
-				activeUser.isLay = true;
-			})
 			.on('giveup', () => {
 				this.activeUser.splice(this.activeIndex--, 1);
 				activeUser.emit('over');
@@ -459,7 +491,7 @@ class JinHua {
 				if (this.activeIndex++ >= this.activeUser.length) {	// 当前用户就是末尾用户
 					this.activeIndex = 0;	// 新一轮循环
 				}
-				curUser.clear();	// 清除当前用户身上绑定的事件
+				curUser.clear(null, ['see']);	// 清除当前用户身上绑定的事件
 			})
 		activeUser.beforeEmit = (ev) => {
 			var stopCountDonw = ['follow', 'add', 'over'];
@@ -514,13 +546,31 @@ class EventListener {
 		(this._attach[ev] = []);
 	}
 
-	clear () {
-		this.attach = {};
+	/*
+	* @params remove [Array] 待移除的事件
+	* @params keey [Array] 跳过
+	*/
+	clear (remove, keep) {
+		if (remove) {
+			remove.forEach((item, index) => {
+				delete this._attach[item];
+			})
+		} else {
+			if (keep) {
+				var curObj = {};
+				keep.forEach((item, index) => {
+					curObj[item] = this._attach[item];
+				})
+				this._attach = curObj;
+			} else {
+				this._attach = {};
+			}
+		}
 	}
 
 	_loopEvent (ev, cb) {
-		for (var i = 0, len = this.attach[ev].length; i < len; i++) {
-			var curEv = this.attach[ev][i];
+		for (var i = 0, len = this._attach[ev].length; i < len; i++) {
+			var curEv = this._attach[ev][i];
 			cb(curEv, i);
 		}
 	}
@@ -530,9 +580,11 @@ class EventListener {
 * 用户的账户类
 */
 class Account extends EventListener {
-	constructor (id) {
+	constructor (name, id) {
 		super();
-		this.id = id;	// 用户id
+		var _this = this;
+		this.id = id || name;	// 用户id
+		this.userName = name;
 		// 余额
 		this.balance = {
 			given: 100,	// 初始账户默认赠与100

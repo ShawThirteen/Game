@@ -1,6 +1,74 @@
 <html>
 <head>
 <title></title>
+<style type="text/css">
+ul, li { list-style: none; padding: 0px; margin: 0px;}
+#game_wrap {
+	width: 1000px;
+	margin: 0 auto;
+	background: #ccc;
+	border: 2px solid #666;
+	padding-bottom: 40px;
+}
+#headerWrap {
+	line-height: 40px;
+	background: linear-gradient(#bbb, #fff, #bbb);
+	border-bottom: 2px solid #666;
+	text-align: center;
+}
+
+#headerWrap label,
+#bodyWrap label {
+	display: inline-block;
+}
+#countDown_wrap {
+	text-align: center;
+	font-size: 36px;
+	padding-bottom: 20px;
+}
+
+#headerWrap label span {
+	color: blue;
+}
+
+#bodyWrap {
+	text-align: center;
+	line-height: 100px;
+	font-size: 46px;
+	font-weight: bold;
+	padding: 30px 0 10px;
+}
+
+
+#headerWrap label:first-of-type,
+#bodyWrap label:first-of-type {
+	margin-right: 40px;
+}
+
+#bodyWrap label span {
+	color: #a72626;
+}
+
+#footerwrap ul:after {
+	content: "";
+	display: block;
+	clear: both;
+}
+#footerwrap ul li {
+	float: left;
+	width: 20%;
+	height: 100px;
+	border: 2px solid yellow;
+	box-sizing: border-box;
+	padding: 10px;
+}
+
+#footerwrap ul li .remain,
+#footerwrap ul li .username {
+	color: green;
+}
+
+</style>
 <script src="game.js"></script>
 </head>
 <body>
@@ -11,9 +79,11 @@
 // 基础示例
 var game = new JinHua('game_wrap');
 
-for (var i = 0; i < 10; i++) {
-	game.addUser(new Account('小马' + i));
+for (var i = 0; i < 24; i++) {
+	game.addUser(new Account('小马' + i), i + 1);
 }
+game.start();
+
 </script>
 </body>
 </html>
