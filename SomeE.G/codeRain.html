@@ -1,0 +1,130 @@
+<html>
+<head>
+<title></title>
+<style type="text/css">
+canvas {
+    background: #000;
+}
+</style>
+</head>
+<body>
+<canvas width="960" height="640" id="canvas"></canvas>
+<script type="text/javascript">
+const canvasWidth = 960;
+const canvasheight = 640;
+const fontSize = '16px';
+function randStr (minLen, maxLen, insert) {
+    const modelStr = 'abcdefghijklmnopqrstuvwxyz';
+    var modelStrLen = modelStr.length;
+
+    var len = parseInt(Math.random() * (maxLen - minLen) + minLen);
+    var strArr = [];
+    for (var i = 0; i < len; i++) {
+        strArr.push(modelStr[parseInt(Math.random() * modelStrLen)]);
+    }
+    if (insert) {
+        var insLen = insert.length;
+        var index = parseInt(Math.random() * (len - insLen));
+        for (var i = 0; i < insLen; i++) {
+            strArr[i + index] = insert[i];
+        }
+    }
+    return strArr.join('');
+}
+
+function getRandomSpeed () {
+    return Math.random() * 15 + 15;
+}
+
+function getRandomLocationFirstY () {
+    return -Math.random() * 20 * parseInt(fontSize) + Math.random() * canvasheight;
+}
+
+function getRandomLocationY () {
+    return -canvasheight + Math.random() * 20 * parseInt(fontSize);
+}
+
+function Rain (x, y, insert, width) {
+    return {
+        string: randStr(20, 30, insert),
+        speed: getRandomSpeed(),
+        x: x,
+        y: y,
+        width: width
+    }
+}
+
+function getInsertString (index) {
+    var insert = '';
+    switch (true) {
+        case i % 3 == 0:
+            insert = 'mmp';
+            break;
+        case i % 2 == 0:
+            insert = 'fuck';
+            break;
+        default:
+            insert = 'shit';
+            break;
+    }
+    return insert;
+}
+
+function GetRainArr (count) {
+    var rainArr = [];
+    if (rainArr.length == 0) {
+        var width = canvasWidth / count;
+        for (var i = 1; i <= count; i++) {
+            var insert = getInsertString(i);
+            var curY = getRandomLocationFirstY();
+            rainArr.push(new Rain((i - 1) * width, curY, insert, width));
+        }
+    }
+    return function () {
+        return rainArr;
+    }
+}
+function drawRain (ctx) {
+    var arr = getRainArr();
+    var count = arr.length;
+    ctx.fillStyle = gradient;
+    ctx.font = fontSize + ' Arial';
+    ctx.textBaseline = "top"; 
+    ctx.textAlign = 'left';
+    var fontLimit = parseInt(fontSize);
+
+    for (var i = 0; i < count; i++) {
+        var curRain = arr[i];
+        var curStr = curRain.string;
+        for (var j = 0, jLen = curStr.length; j < jLen; j++) {
+            ctx.fillText(curStr[j], curRain.x, j * 40 + curRain.y);
+        }
+        curRain.y += curRain.speed;
+        if (curRain.y > 20 * fontLimit + canvasheight) {
+            curRain.y = getRandomLocationY();
+            curRain.speed = getRandomSpeed();
+
+            curRain.string = randStr(10, 15, getInsertString(i + 1));
+        }
+    }
+}
+
+var ctx = document.getElementById('canvas').getContext('2d');
+var gradient = ctx.createLinearGradient(0, 0, 0, canvasheight);
+for (var i = 0; i < 5; i++) {
+    var alpha = (Math.random() * 80 + 70) / 255;
+    gradient.addColorStop(i * 0.05, 'rgba(131, 245, 6, '+ alpha +')');
+}
+var getRainArr = new GetRainArr(70);
+
+function run () {
+    ctx.clearRect(0, 0, canvasWidth, canvasheight);
+    drawRain(ctx);
+    requestAnimationFrame(run);
+}
+requestAnimationFrame(run)
+
+
+</script>
+</body>
+</html>
