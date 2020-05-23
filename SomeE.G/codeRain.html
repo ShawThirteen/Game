@@ -33,7 +33,7 @@ function randStr (minLen, maxLen, insert) {
 }
 
 function getRandomSpeed () {
-    return Math.random() * 15 + 15;
+    return Math.random() * 10 + 10;
 }
 
 function getRandomLocationFirstY () {
@@ -84,6 +84,8 @@ function GetRainArr (count) {
         return rainArr;
     }
 }
+var symbol = 0;
+var symbolLimit = 3;
 function drawRain (ctx) {
     var arr = getRainArr();
     var count = arr.length;
@@ -92,7 +94,7 @@ function drawRain (ctx) {
     ctx.textBaseline = "top"; 
     ctx.textAlign = 'left';
     var fontLimit = parseInt(fontSize);
-
+    symbol++;
     for (var i = 0; i < count; i++) {
         var curRain = arr[i];
         var curStr = curRain.string;
@@ -100,12 +102,20 @@ function drawRain (ctx) {
             ctx.fillText(curStr[j], curRain.x, j * 40 + curRain.y);
         }
         curRain.y += curRain.speed;
+        
         if (curRain.y > 20 * fontLimit + canvasheight) {
             curRain.y = getRandomLocationY();
             curRain.speed = getRandomSpeed();
 
             curRain.string = randStr(10, 15, getInsertString(i + 1));
         }
+
+        if (symbol == symbolLimit) {
+            curRain.string = randStr(10, 15, getInsertString(i + 1));
+        }
+    }
+    if (symbol == symbolLimit) {
+        symbol = 0;
     }
 }
 
@@ -113,9 +123,9 @@ var ctx = document.getElementById('canvas').getContext('2d');
 var gradient = ctx.createLinearGradient(0, 0, 0, canvasheight);
 for (var i = 0; i < 5; i++) {
     var alpha = (Math.random() * 80 + 70) / 255;
-    gradient.addColorStop(i * 0.05, 'rgba(131, 245, 6, '+ alpha +')');
+    gradient.addColorStop((5 - i) * 0.05, 'rgba(131, 245, 6, '+ alpha +')');
 }
-var getRainArr = new GetRainArr(70);
+var getRainArr = new GetRainArr(90);
 
 function run () {
     ctx.clearRect(0, 0, canvasWidth, canvasheight);
